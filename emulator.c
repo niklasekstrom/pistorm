@@ -21,6 +21,7 @@ Copyright 2020 Claude Schwartz
 #include "ide.h"
 #include "m68k.h"
 #include "main.h"
+#include "a314/a314.h"
 
 //#define BCM2708_PERI_BASE        0x20000000  //pi0-1
 //#define BCM2708_PERI_BASE	0xFE000000     //pi4
@@ -70,8 +71,10 @@ Copyright 2020 Claude Schwartz
       reset |= (1 << (no)); \
   } while (0)
 
-#define FASTBASE 0x08000000
-#define FASTSIZE (256*1024*1024)
+//#define FASTBASE 0x08000000
+//#define FASTSIZE (256*1024*1024)
+#define FASTBASE 0xC00000
+#define FASTSIZE (3*512*1024)
 
 #define GAYLEBASE 0xD80000
 #define GAYLESIZE (448*1024)
@@ -169,6 +172,14 @@ int main(int argc, char *argv[]) {
       gayle_emulation_enabled = 0;
     }
   }
+
+#if A314_ENABLED
+  int err = a314_init();
+  if (err < 0) {
+    printf("Unable to initialize A314 emulation\n");
+    return -1;
+  }
+#endif
 
   sched_setscheduler(0, SCHED_FIFO, &priority);
   mlockall(MCL_CURRENT);  // lock in memory to keep us from paging out
@@ -314,6 +325,9 @@ int main(int argc, char *argv[]) {
     usleep(1);
 */
 
+#if A314_ENABLED
+    a314_process_events();
+#endif
 
     if (GET_GPIO(1) == 0){
       srdata = read_reg();
@@ -360,6 +374,12 @@ unsigned int m68k_read_memory_8(unsigned int address) {
     }
   }
 
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    return a314_read_memory_8(address - A314_COM_AREA_BASE);
+  }
+#endif
+
     address &=0xFFFFFF;
 //  if (address < 0xffffff) {
     return read8((uint32_t)address);
@@ -384,6 +404,12 @@ unsigned int m68k_read_memory_16(unsigned int address) {
       return readGayle(address);
     }
   }
+
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    return a314_read_memory_16(address - A314_COM_AREA_BASE);
+  }
+#endif
 
 //  if (address < 0xffffff) {
     address &=0xFFFFFF;
@@ -410,6 +436,12 @@ unsigned int m68k_read_memory_32(unsigned int address) {
     }
   }
 
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    return a314_read_memory_32(address - A314_COM_AREA_BASE);
+  }
+#endif
+
 //  if (address < 0xffffff) {
     address &=0xFFFFFF;
     uint16_t a = read16(address);
@@ -432,6 +464,14 @@ void m68k_write_memory_8(unsigned int address, unsigned int value) {
       return;
     }
   }
+
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    a314_write_memory_8(address - A314_COM_AREA_BASE, value);
+    return;
+  }
+#endif
+
 /*
   if (address == 0xbfe001) {
     ovl = (value & (1 << 0));
@@ -460,6 +500,13 @@ void m68k_write_memory_16(unsigned int address, unsigned int value) {
     }
   }
 
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    a314_write_memory_16(address - A314_COM_AREA_BASE, value);
+    return;
+  }
+#endif
+
 //  if (address < 0xffffff) {
     address &=0xFFFFFF;
     write16((uint32_t)address, value);
@@ -479,6 +526,13 @@ void m68k_write_memory_32(unsigned int address, unsigned int value) {
       writeGayleL(address, value);
     }
   }
+
+#if A314_ENABLED
+  if (address >= A314_COM_AREA_BASE && address < A314_COM_AREA_BASE + A314_COM_AREA_SIZE) {
+    a314_write_memory_32(address - A314_COM_AREA_BASE, value);
+    return;
+  }
+#endif
 
 //  if (address < 0xffffff) {
     address &=0xFFFFFF;
