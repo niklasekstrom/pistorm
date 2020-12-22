@@ -1,1 +1,4 @@
 .vscode
+hdl/db
+hdl/incremental_db
+hdl/output_files
