@@ -77,6 +77,7 @@ const uint8_t ide_magic[8] = {
   '1','D','E','D','1','5','C','0'
 };
 
+/*
 static char *charmap(uint8_t v)
 {
   static char cbuf[3];
@@ -107,6 +108,7 @@ static void hexdump(uint8_t *bp)
     fprintf(stderr, "\n");
   }
 }
+*/
 
 /* FIXME: use proper endian convertors! */
 static uint16_t le16(uint16_t v)
@@ -514,7 +516,7 @@ static uint16_t ide_data_in(struct ide_drive *d, int len)
   return d->taskfile.data;
 }
 
-static void ide_data_out(struct ide_drive *d, uint16_t v, int len)
+static void ide_data_out(struct ide_drive *d, uint16_t v, __attribute__((unused)) int len)
 {
   if (d->state != IDE_DATA_OUT) {
     ide_fault(d, "bad data write");
@@ -616,6 +618,7 @@ uint8_t ide_read8(struct ide_controller *c, uint8_t r)
       return t->lba4;
     case ide_status_r:
       d->intrq = 0;		/* Acked */
+      /* fallthrough */
     case ide_altst_r:
       return t->status;
     default:
@@ -819,7 +822,11 @@ static void make_ascii(uint16_t *p, const char *t, int len)
 {
   int i;
   char *d = (char *)p;
-  strncpy(d, t, len);
+  int tlen = strlen(t);
+  int copy_len = len < tlen ? len : tlen;
+  memcpy(d, t, copy_len);
+  if (copy_len < len)
+    memset(d + copy_len, 0, len - copy_len);
 
   for (i = 0; i < len; i += 2) {
     char c = *d;

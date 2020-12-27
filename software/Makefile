@@ -1,14 +1,11 @@
-EXENAME          = emulator
+EXENAME          = pistorm
 
-MAINFILES        = emulator.c Gayle.c ide.c
+MAINFILES        = pistorm.c ps_protocol.c ps_mappings.c ps_kickstart.c gayle.c ide/ide.c
 MUSASHIFILES     = m68kcpu.c softfloat/softfloat.c 
 MUSASHIGENCFILES = m68kops.c
 MUSASHIGENHFILES = m68kops.h
 MUSASHIGENERATOR = m68kmake
 
-# EXE = .exe
-# EXEPATH = .\\
-EXE =
 EXEPATH = ./
 
 .CFILES   = $(MAINFILES) $(MUSASHIFILES) $(MUSASHIGENCFILES)
@@ -17,18 +14,17 @@ EXEPATH = ./
 CC        = gcc
 WARNINGS  = -Wall -Wextra -pedantic
 CFLAGS    = $(WARNINGS) -march=armv7 -O3
+#CFLAGS    = $(WARNINGS) -O3
 LFLAGS    = $(WARNINGS)
 
 TARGET = $(EXENAME)$(EXE)
 
 DELETEFILES = $(MUSASHIGENCFILES) $(MUSASHIGENHFILES) $(.OFILES) $(TARGET) $(MUSASHIGENERATOR)$(EXE)
 
-
 all: $(TARGET)
 
 clean:
 	rm -f $(DELETEFILES)
-
 
 $(TARGET): $(MUSASHIGENHFILES) $(.OFILES) Makefile
 	$(CC) -o $@ $(.OFILES) -O3 -pthread $(LFLAGS) -lm

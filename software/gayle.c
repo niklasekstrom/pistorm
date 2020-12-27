@@ -5,17 +5,19 @@
 //  Created by Matt Parsons on 06/03/2019.
 //  Copyright © 2019 Matt Parsons. All rights reserved.
 //
+//  Changes made 2020 by Niklas Ekström to better fit PiStorm.
 
 // Write Byte to Gayle Space 0xda9000 (0x0000c3)
 // Read Byte From Gayle Space 0xda9000
 // Read Byte From Gayle Space 0xdaa000
 
-#include "Gayle.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "ide.h"
+
+#include "ide/ide.h"
+#include "ps_mappings.h"
 
 #define CLOCKBASE 0xDC0000
 
@@ -87,36 +89,19 @@
 #define GAYLE_INT_BVD_LEV 0x02 /* BVD int level, 0=lev2,1=lev6 */
 #define GAYLE_INT_BSY_LEV 0x01 /* BSY int level, 0=lev2,1=lev6 */
 
-int counter;
+static int counter;
 static uint8_t gayle_irq, gayle_int, gayle_cs, gayle_cs_mask, gayle_cfg;
 static struct ide_controller *ide0;
-int fd;
+static int fd;
 
-void InitGayle(void) {
-  ide0 = ide_allocate("cf");
-  fd = open("hd0.img", O_RDWR);
-  if (fd == -1) {
-    printf("HDD Image hd0.image failed open\n");
-  } else {
-    ide_attach(ide0, 0, fd);
-    ide_reset_begin(ide0);
-    printf("HDD Image hd0.image attached\n");
-  }
-}
+unsigned int check_gayle_irq() {
+  if (gayle_int & (1 << 7))
+    return ide0->drive->intrq;
 
-uint8_t CheckIrq(void) {
-  uint8_t irq;
-
-  if (gayle_int & (1 << 7)) {
-    irq = ide0->drive->intrq;
-    //	if (irq==0)
-    //	printf("IDE IRQ: %x\n",irq);
-    return irq;
-  };
   return 0;
 }
 
-void writeGayleB(unsigned int address, unsigned int value) {
+static void writeGayleB(unsigned int address, unsigned int value) {
   if (address == GFEAT) {
     ide_write8(ide0, ide_feature_w, value);
     return;
@@ -186,7 +171,7 @@ void writeGayleB(unsigned int address, unsigned int value) {
   printf("Write Byte to Gayle Space 0x%06x (0x%06x)\n", address, value);
 }
 
-void writeGayle(unsigned int address, unsigned int value) {
+static void writeGayle(unsigned int address, unsigned int value) {
   if (address == GDATA) {
     ide_write16(ide0, ide_data, value);
     return;
@@ -195,11 +180,11 @@ void writeGayle(unsigned int address, unsigned int value) {
   printf("Write Word to Gayle Space 0x%06x (0x%06x)\n", address, value);
 }
 
-void writeGayleL(unsigned int address, unsigned int value) {
+static void writeGayleL(unsigned int address, unsigned int value) {
   printf("Write Long to Gayle Space 0x%06x (0x%06x)\n", address, value);
 }
 
-uint8_t readGayleB(unsigned int address) {
+static unsigned int readGayleB(unsigned int address) {
   if (address == GERROR) {
     return ide_read8(ide0, ide_error_r);
   }
@@ -246,8 +231,8 @@ uint8_t readGayleB(unsigned int address) {
   if (address == GIRQ) {
     //	printf("Read Byte From GIRQ Space 0x%06x\n",gayle_irq);
 
-    return 0x80;//gayle_irq;
-/*
+    return 0x80;  //gayle_irq;
+                  /*
     uint8_t irq;
     irq = ide0->drive->intrq;
 
@@ -257,8 +242,8 @@ uint8_t readGayleB(unsigned int address) {
     }
 
     return 0;
-*/ 
- }
+*/
+  }
 
   if (address == GCS) {
     printf("Read Byte From GCS Space 0x%06x\n", 0x1234);
@@ -281,7 +266,7 @@ uint8_t readGayleB(unsigned int address) {
   return 0xFF;
 }
 
-uint16_t readGayle(unsigned int address) {
+static unsigned int readGayle(unsigned int address) {
   if (address == GDATA) {
     uint16_t value;
     value = ide_read16(ide0, ide_data);
@@ -293,7 +278,30 @@ uint16_t readGayle(unsigned int address) {
   return 0x8000;
 }
 
-uint32_t readGayleL(unsigned int address) {
+static unsigned int readGayleL(unsigned int address) {
   printf("Read Long From Gayle Space 0x%06x\n", address);
   return 0x8000;
+}
+
+int init_gayle() {
+  ide0 = ide_allocate("cf");
+
+  fd = open("hd0.img", O_RDWR);
+  if (fd < 0) {
+    printf("HDD Image hd0.image failed open\n");
+    return -1;
+  }
+
+  ide_attach(ide0, 0, fd);
+  ide_reset_begin(ide0);
+  printf("HDD Image hd0.image attached\n");
+
+  struct ps_device gayle_device = {
+      readGayleB, readGayle, readGayleL,
+      writeGayleB, writeGayle, writeGayleL};
+
+  uint32_t devno = ps_add_device(&gayle_device);
+  ps_add_range(devno, 0xd80000, 0x40000);
+  ps_add_range(devno, 0xdd0000, 0x20000);
+  return 0;
 }

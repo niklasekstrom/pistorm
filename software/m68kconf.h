@@ -67,8 +67,8 @@
 #define M68K_EMULATE_010            OPT_ON
 #define M68K_EMULATE_EC020          OPT_ON
 #define M68K_EMULATE_020            OPT_ON
-#define M68K_EMULATE_030            OPT_ON
-#define M68K_EMULATE_040            OPT_ON
+#define M68K_EMULATE_030            OPT_OFF
+#define M68K_EMULATE_040            OPT_OFF
 
 
 /* If ON, the CPU will call m68k_read_immediate_xx() for immediate addressing
@@ -200,20 +200,8 @@
 */
 #define M68K_USE_64_BIT  OPT_ON
 
+void cpu_pulse_reset();
 
-#include "main.h"
-
-
-//#define m68k_read_memory_8(A)  read16(A)
-//#define m68k_read_memory_16(A) read16(A)
-//#define m68k_read_memory_32(A) read16(A)
-
-//#define m68k_read_disassembler_16(A) cpu_read_word_dasm(A)
-//#define m68k_read_disassembler_32(A) cpu_read_long_dasm(A)
-
-//#define m68k_write_memory_8(A, V)  write16(A, V)
-//#define m68k_write_memory_16(A, V) write16(A, V)
-//#define m68k_write_memory_32(A, V) write16(A, V)
 
 
 #endif /* M68K_COMPILE_FOR_MAME */
