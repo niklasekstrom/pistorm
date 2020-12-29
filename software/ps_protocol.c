@@ -169,37 +169,24 @@ void ps_setup_protocol() {
 }
 
 void ps_write_16(unsigned int address, unsigned int data) {
-  unsigned int addr_lo_set = (address & 0xffff) << 8;
-  unsigned int addr_lo_clr = (~address & 0xffff) << 8;
-
-  unsigned int addr_hi_set = (address >> 16) << 8;
-  unsigned int addr_hi_clr = (~address >> 16) << 8;
-
-  unsigned int data_set = (data & 0xffff) << 8;
-  unsigned int data_clr = (~data & 0xffff) << 8;
-
-  *(gpio + 10) = 1 << PIN_SA0;
-  *(gpio + 10) = 1 << PIN_SA1;
-  *(gpio + 10) = 1 << PIN_SA2;
-
   *(gpio) = gpfsel0_o;
   *(gpio + 1) = gpfsel1_o;
   *(gpio + 2) = gpfsel2_o;
 
-  *(gpio + 7) = addr_lo_set;
-  *(gpio + 10) = addr_lo_clr;
+  *(gpio + 10) = (0xffff << 8) | (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = (address & 0xffff) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = addr_hi_set;
-  *(gpio + 10) = addr_hi_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (address >> 16) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = data_set;
-  *(gpio + 10) = data_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (data & 0xffff) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
@@ -218,37 +205,24 @@ void ps_write_8(unsigned int address, unsigned int data) {
   else
     data = data & 0xff;  // ODD , A0=1,LDS
 
-  unsigned int addr_lo_set = (address & 0xffff) << 8;
-  unsigned int addr_lo_clr = (~address & 0xffff) << 8;
-
-  unsigned int addr_hi_set = (address >> 16) << 8;
-  unsigned int addr_hi_clr = (~address >> 16) << 8;
-
-  unsigned int data_set = (data & 0xffff) << 8;
-  unsigned int data_clr = (~data & 0xffff) << 8;
-
-  *(gpio + 10) = 1 << PIN_SA0;
-  *(gpio + 7) = 1 << PIN_SA1;
-  *(gpio + 10) = 1 << PIN_SA2;
-
   *(gpio) = gpfsel0_o;
   *(gpio + 1) = gpfsel1_o;
   *(gpio + 2) = gpfsel2_o;
 
-  *(gpio + 7) = addr_lo_set;
-  *(gpio + 10) = addr_lo_clr;
+  *(gpio + 10) = (0xffff << 8) | (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = ((address & 0xffff) << 8) | (1 << PIN_SA1);
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = addr_hi_set;
-  *(gpio + 10) = addr_hi_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (address >> 16) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = data_set;
-  *(gpio + 10) = data_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (data & 0xffff) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
@@ -267,28 +241,18 @@ void ps_write_32(unsigned int address, unsigned int value) {
 }
 
 unsigned int ps_read_16(unsigned int address) {
-  unsigned int addr_lo_set = (address & 0xffff) << 8;
-  unsigned int addr_lo_clr = (~address & 0xffff) << 8;
-
-  unsigned int addr_hi_set = (address >> 16) << 8;
-  unsigned int addr_hi_clr = (~address >> 16) << 8;
-
-  *(gpio + 7) = 1 << PIN_SA0;
-  *(gpio + 10) = 1 << PIN_SA1;
-  *(gpio + 10) = 1 << PIN_SA2;
-
   *(gpio) = gpfsel0_o;
   *(gpio + 1) = gpfsel1_o;
   *(gpio + 2) = gpfsel2_o;
 
-  *(gpio + 7) = addr_lo_set;
-  *(gpio + 10) = addr_lo_clr;
+  *(gpio + 10) = (0xffff << 8) | (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = ((address & 0xffff) << 8) | (1 << PIN_SA0);
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = addr_hi_set;
-  *(gpio + 10) = addr_hi_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (address >> 16) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
@@ -312,33 +276,22 @@ unsigned int ps_read_16(unsigned int address) {
 }
 
 unsigned int ps_read_8(unsigned int address) {
-  unsigned int addr_lo_set = (address & 0xffff) << 8;
-  unsigned int addr_lo_clr = (~address & 0xffff) << 8;
-
-  unsigned int addr_hi_set = (address >> 16) << 8;
-  unsigned int addr_hi_clr = (~address >> 16) << 8;
-
-  *(gpio + 7) = 1 << PIN_SA0;
-  *(gpio + 7) = 1 << PIN_SA1;
-  *(gpio + 10) = 1 << PIN_SA2;
-
   *(gpio) = gpfsel0_o;
   *(gpio + 1) = gpfsel1_o;
   *(gpio + 2) = gpfsel2_o;
 
-  *(gpio + 7) = addr_lo_set;
-  *(gpio + 10) = addr_lo_clr;
+  *(gpio + 10) = (0xffff << 8) | (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = ((address & 0xffff) << 8) | (1 << PIN_SA1) | (1 << PIN_SA0);
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  *(gpio + 7) = addr_hi_set;
-  *(gpio + 10) = addr_hi_clr;
+  *(gpio + 10) = 0xffff << 8;
+  *(gpio + 7) = (address >> 16) << 8;
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  // read phase
   *(gpio) = gpfsel0;
   *(gpio + 1) = gpfsel1;
   *(gpio + 2) = gpfsel2;
@@ -369,16 +322,12 @@ unsigned int ps_read_32(unsigned int address) {
 }
 
 void ps_write_status_reg(unsigned int value) {
-  *(gpio + 10) = 1 << PIN_SA0;
-  *(gpio + 10) = 1 << PIN_SA1;
-  *(gpio + 7) = 1 << PIN_SA2;
-
   *(gpio) = gpfsel0_o;
   *(gpio + 1) = gpfsel1_o;
   *(gpio + 2) = gpfsel2_o;
 
-  *(gpio + 7) = (value & 0xffff) << 8;
-  *(gpio + 10) = (~value & 0xffff) << 8;
+  *(gpio + 10) = (0xffff << 8) | (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = ((value & 0xffff) << 8) | (1 << PIN_SA2);
 
   *(gpio + 10) = 1 << PIN_SWE;
   *(gpio + 10) = 1 << PIN_SWE;  // delay
@@ -392,14 +341,13 @@ void ps_write_status_reg(unsigned int value) {
 }
 
 unsigned int ps_read_status_reg() {
-  *(gpio + 10) = 1 << PIN_SA0;
-  *(gpio + 10) = 1 << PIN_SA1;
-  *(gpio + 7) = 1 << PIN_SA2;
-
   // Bus HIGH-Z
   *(gpio) = gpfsel0;
   *(gpio + 1) = gpfsel1;
   *(gpio + 2) = gpfsel2;
+
+  *(gpio + 10) = (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
+  *(gpio + 7) = (1 << PIN_SA2);
 
   *(gpio + 10) = 1 << PIN_SOE;
   *(gpio + 10) = 1 << PIN_SOE;
