@@ -3,9 +3,9 @@
  *
  * Niklas Ekström 2020 - reorganized source code
  */
-#include <stdio.h>
 #include <fcntl.h>
 #include <sched.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -13,12 +13,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "m68k.h"
-#include "psconf.h"
-#include "ps_protocol.h"
-#include "ps_mappings.h"
-#include "ps_kickstart.h"
 #include "gayle.h"
+#include "m68k.h"
+#include "ps_fastmem.h"
+#include "ps_kickstart.h"
+#include "ps_mappings.h"
+#include "ps_protocol.h"
+#include "psconf.h"
 
 int use_gayle_emulation;
 
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
   mlockall(MCL_CURRENT);
 
   init_mappings();
+  init_fastmem();
 
   ps_setup_protocol();
   ps_reset_state_machine();
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
       unsigned int status = ps_read_status_reg();
       m68k_set_irq((status & 0xe000) >> 13);
     } else if (check_gayle_irq()) {
-      PAULA_SET_IRQ(3); // IRQ 3 = INT2
+      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
       m68k_set_irq(2);
     } else {
       m68k_set_irq(0);

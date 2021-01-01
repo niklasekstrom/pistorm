@@ -7,10 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ps_fastmem.h"
 #include "ps_protocol.h"
 #include "psconf.h"
-
-unsigned char fastmem[FASTMEM_SIZE];
 
 static struct ps_device devices[MAX_MAPPING_DEVICES];
 static int devices_size = 0;
@@ -174,32 +173,6 @@ void m68k_write_memory_32(unsigned int address, unsigned int value) {
 #endif
 }
 
-#if !FASTMEM_FASTPATH
-static unsigned int fastmem_read_8(unsigned int address) {
-  return fastmem[address - FASTMEM_BASE];
-}
-
-static unsigned int fastmem_read_16(unsigned int address) {
-  return be16toh(*(uint16_t *)&fastmem[address - FASTMEM_BASE]);
-}
-
-static unsigned int fastmem_read_32(unsigned int address) {
-  return be32toh(*(uint32_t *)&fastmem[address - FASTMEM_BASE]);
-}
-
-static void fastmem_write_8(unsigned int address, unsigned int value) {
-  fastmem[address - FASTMEM_BASE] = value;
-}
-
-static void fastmem_write_16(unsigned int address, unsigned int value) {
-  *(uint16_t *)&fastmem[address - FASTMEM_BASE] = htobe16(value);
-}
-
-static void fastmem_write_32(unsigned int address, unsigned int value) {
-  *(uint32_t *)&fastmem[address - FASTMEM_BASE] = htobe32(value);
-}
-#endif
-
 int ps_add_device(struct ps_device *device) {
   if (devices_size == MAX_MAPPING_DEVICES) {
     printf("Error: Too many mapped devices, max = %d\n", MAX_MAPPING_DEVICES);
@@ -261,14 +234,5 @@ void init_mappings() {
 
 #if USE_MAPPING_TABLE
   memset(range_mapping, 0, sizeof(range_mapping));
-#endif
-
-#if !FASTMEM_FASTPATH
-  struct ps_device fastmem_device = {
-      fastmem_read_8, fastmem_read_16, fastmem_read_32,
-      fastmem_write_8, fastmem_write_16, fastmem_write_32};
-
-  devno = ps_add_device(&fastmem_device);
-  ps_add_range(devno, FASTMEM_BASE, FASTMEM_SIZE);
 #endif
 }
