@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     m68k_set_reg(M68K_REG_PC, KICK_BASE + 2);
 
   if (use_gayle_emulation)
-    init_gayle();
+    init_gayle("hd0.img");
 
   while (1) {
     m68k_execute(300);
