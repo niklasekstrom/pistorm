@@ -18,6 +18,7 @@
 #include "ps_fastmem.h"
 #include "ps_kickstart.h"
 #include "ps_mappings.h"
+#include "ps_autoconfig.h"
 #include "ps_protocol.h"
 #include "psconf.h"
 
@@ -44,6 +45,7 @@ int main(int argc, char *argv[]) {
   mlockall(MCL_CURRENT);
 
   init_mappings();
+  init_autoconfig();
   init_fastmem();
 
   ps_setup_protocol();

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ps_autoconfig.h"
 #include "ps_mappings.h"
 #include "ps_protocol.h"
 #include "psconf.h"
@@ -39,6 +40,28 @@ static void fastmem_write_32(unsigned int address, unsigned int value) {
 }
 #endif
 
+static unsigned char ac_rom[] = {
+    0xe, AC_MEM_SIZE_8MB,                   // 00/02, link into memory free list, 8 MB
+    0x6, 0x9,                               // 04/06, product id
+    0x8, 0x0,                               // 08/0a, preference to 8 MB space
+    0x0, 0x0,                               // 0c/0e, reserved
+    0x0, 0x7, 0xd, 0xb,                     // 10/12/14/16, mfg id
+    0x0, 0x0, 0x0, 0x0, 0x0, 0x4, 0x2, 0x0  // 18/.../26, serial
+};
+
+static void done_callback(int configured, unsigned int base) {
+  if (!configured) {
+    printf("Error: autoconfig did not map fastmem\n");
+    exit(-1);
+  }
+
+  if (base != FASTMEM_BASE) {
+    printf("Error: autoconfig mapped fastmem at address %08x, should be %08x\n",
+           base, FASTMEM_BASE);
+    exit(-1);
+  }
+}
+
 void init_fastmem() {
 #if !FASTMEM_FASTPATH
   struct ps_device fastmem_device = {
@@ -47,5 +70,9 @@ void init_fastmem() {
 
   unsigned int devno = ps_add_device(&fastmem_device);
   ps_add_range(devno, FASTMEM_BASE, FASTMEM_SIZE);
+#endif
+
+#if FASTMEM_AUTOCONFIG
+  add_autoconfig_pic(ac_rom, sizeof(ac_rom), done_callback);
 #endif
 }
