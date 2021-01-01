@@ -12,6 +12,8 @@
 
 #define MAX_AUTOCONFIG_PICS 16
 
+#define A314_ENABLED 1
+
 #define FASTMEM_BASE 0x200000
 #define FASTMEM_SIZE (8 * 1024 * 1024)
 

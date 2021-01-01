@@ -13,12 +13,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "a314/a314.h"
 #include "gayle.h"
 #include "m68k.h"
+#include "ps_autoconfig.h"
 #include "ps_fastmem.h"
 #include "ps_kickstart.h"
 #include "ps_mappings.h"
-#include "ps_autoconfig.h"
 #include "ps_protocol.h"
 #include "psconf.h"
 
@@ -65,6 +66,13 @@ int main(int argc, char *argv[]) {
   if (use_gayle_emulation)
     init_gayle("hd0.img");
 
+#if A314_ENABLED
+  res = a314_init();
+  if (res < 0) {
+    printf("Unable to initialize A314 emulation\n");
+  }
+#endif
+
   while (1) {
     m68k_execute(300);
 
@@ -74,6 +82,11 @@ int main(int argc, char *argv[]) {
     } else if (check_gayle_irq()) {
       PAULA_SET_IRQ(3);  // IRQ 3 = INT2
       m68k_set_irq(2);
+#if A314_ENABLED
+    } else if (a314_check_int2()) {
+      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
+      m68k_set_irq(2);
+#endif
     } else {
       m68k_set_irq(0);
     }

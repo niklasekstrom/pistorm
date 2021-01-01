@@ -9,9 +9,10 @@ MUSASHIGENERATOR = m68kmake
 EXEPATH = ./
 
 .CFILES   = $(MAINFILES) $(MUSASHIFILES) $(MUSASHIGENCFILES)
-.OFILES   = $(.CFILES:%.c=%.o)
+.OFILES   = $(.CFILES:%.c=%.o) a314/a314.o
 
 CC        = gcc
+CPP       = g++
 WARNINGS  = -Wall -Wextra -pedantic
 CFLAGS    = $(WARNINGS) -march=armv7 -O3
 #CFLAGS    = $(WARNINGS) -O3
@@ -27,7 +28,10 @@ clean:
 	rm -f $(DELETEFILES)
 
 $(TARGET): $(MUSASHIGENHFILES) $(.OFILES) Makefile
-	$(CC) -o $@ $(.OFILES) -O3 -pthread $(LFLAGS) -lm
+	$(CC) -o $@ $(.OFILES) -O3 -pthread $(LFLAGS) -lm -lstdc++
+
+a314/a314.o: a314/a314.cc a314/a314.h
+	$(CPP) -c -o a314/a314.o -O3 a314/a314.cc
 
 $(MUSASHIGENCFILES) $(MUSASHIGENHFILES): $(MUSASHIGENERATOR)$(EXE)
 	$(EXEPATH)$(MUSASHIGENERATOR)$(EXE)
