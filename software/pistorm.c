@@ -73,22 +73,29 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
+  unsigned int ipl = 0;
+
   while (1) {
     m68k_execute(300);
 
-    if (!ps_get_aux1()) {
+    if (ps_get_status_changed()) {
       unsigned int status = ps_read_status_reg();
-      m68k_set_irq((status & 0xe000) >> 13);
-    } else if (check_gayle_irq()) {
-      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
-      m68k_set_irq(2);
+      ipl = (status & 0xe000) >> 13;
+      m68k_set_irq(ipl);
+    }
+
+    if (ipl == 0) {
+      if (check_gayle_irq()) {
+        PAULA_SET_IRQ(3);  // IRQ 3 = INT2
+        m68k_set_irq(2);
+        ipl = 2;
 #if A314_ENABLED
-    } else if (a314_check_int2()) {
-      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
-      m68k_set_irq(2);
+      } else if (a314_check_int2()) {
+        PAULA_SET_IRQ(3);  // IRQ 3 = INT2
+        m68k_set_irq(2);
+        ipl = 2;
 #endif
-    } else {
-      m68k_set_irq(0);
+      }
     }
   }
 

@@ -37,7 +37,8 @@ unsigned int m68k_read_memory_8(unsigned int address) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   return devices[devno].read_8(address);
 #endif
 
@@ -59,7 +60,8 @@ unsigned int m68k_read_memory_16(unsigned int address) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   return devices[devno].read_16(address);
 #endif
 
@@ -81,7 +83,8 @@ unsigned int m68k_read_memory_32(unsigned int address) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   return devices[devno].read_32(address);
 #endif
 
@@ -104,7 +107,8 @@ void m68k_write_memory_8(unsigned int address, unsigned int value) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   devices[devno].write_8(address, value);
   return;
 #endif
@@ -130,7 +134,8 @@ void m68k_write_memory_16(unsigned int address, unsigned int value) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   devices[devno].write_16(address, value);
   return;
 #endif
@@ -156,7 +161,8 @@ void m68k_write_memory_32(unsigned int address, unsigned int value) {
 #endif
 
 #if USE_MAPPING_TABLE
-  unsigned int devno = range_mapping[(address >> 16) & 0xff];
+  address &= 0xffffff;
+  unsigned int devno = range_mapping[address >> 16];
   devices[devno].write_32(address, value);
   return;
 #endif

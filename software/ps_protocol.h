@@ -16,7 +16,7 @@ void ps_setup_protocol();
 void ps_reset_state_machine();
 void ps_pulse_reset();
 
-int ps_get_aux1();
+int ps_get_status_changed();
 
 #define PAULA_SET_IRQ(x) ps_write_16(0xdff09c, 0x8000 | (1 << x))
 
