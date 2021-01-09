@@ -78,6 +78,13 @@
 #define JOY1DAT 0xDFF00C
 #define CIAAPRA 0xBFE001
 #define POTGOR  0xDFF016
+#define INTENAR 0xDFF01C
+#define INTREQR 0xDFF01E
+#define INTENA  0xDFF09A
+
+#define INTF_SETCLR 0x8000
+#define INTF_INTEN  0x4000
+#define INTF_PORTS  0x0008
 
 int kb_hook_enabled = 0;
 int mouse_hook_enabled = 0;
@@ -182,6 +189,52 @@ void *iplThread(void *args) {
     usleep(1);
   }
 
+}
+
+static unsigned int emulated_int2_req() {
+  return gayle_emulation_enabled && CheckIrq();
+}
+
+static unsigned int intena_shadow = 0;
+
+#define INT2_ENABLED() ((intena_shadow & (INTF_INTEN | INTF_PORTS)) == (INTF_INTEN | INTF_PORTS))
+
+static void write_intena(unsigned int value) {
+  write16(INTENA, value);
+  if (value & INTF_SETCLR) {
+    intena_shadow |= value & (~INTF_SETCLR);
+  } else {
+    intena_shadow &= ~value;
+  }
+}
+
+static unsigned int read_intenar() {
+  unsigned int value = read16(INTENAR);
+  intena_shadow = value;
+  return value;
+}
+
+static unsigned int read_intreqr() {
+  unsigned int value = read16(INTREQR);
+  if (emulated_int2_req()) {
+    value |= INTF_PORTS;
+  }
+  return value;
+}
+
+static void update_irq() {
+  unsigned int ipl = 0;
+
+  if (GET_GPIO(1) == 0) {
+    srdata = read_reg();
+    ipl = (srdata >> 13) & 7;
+  }
+
+  if (ipl < 2 && INT2_ENABLED() && emulated_int2_req()) {
+    ipl = 2;
+  }
+
+  m68k_set_irq(ipl);
 }
 
 int main(int argc, char *argv[]) {
@@ -420,20 +473,7 @@ int main(int argc, char *argv[]) {
     };
     usleep(1);
 */
-
-
-    if (GET_GPIO(1) == 0) {
-      srdata = read_reg();
-      m68k_set_irq((srdata >> 13) & 0xff);
-    } else {
-      if (CheckIrq() == 1) {
-        write16(0xdff09c, 0x8008);
-        m68k_set_irq(2);
-      }
-      else
-         m68k_set_irq(0);
-    };
-
+    update_irq();
   }
 
   stop_cpu_emulation:;
@@ -518,6 +558,11 @@ unsigned int m68k_read_memory_16(unsigned int address) {
     }
   }
 
+  if (address == INTENAR)
+    return read_intenar();
+  else if (address == INTREQR)
+    return read_intreqr();
+
 //  if (address < 0xffffff) {
     address &=0xFFFFFF;
     return (unsigned int)read16((uint32_t)address);
@@ -581,6 +626,11 @@ void m68k_write_memory_16(unsigned int address, unsigned int value) {
     int ret = handle_mapped_write(cfg, address, value, OP_TYPE_WORD, ovl);
     if (ret != -1)
       return;
+  }
+
+  if (address == INTENA) {
+    write_intena(value);
+    return;
   }
 
 //  if (address < 0xffffff) {
