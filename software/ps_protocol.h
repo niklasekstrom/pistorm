@@ -18,6 +18,4 @@ void ps_pulse_reset();
 
 int ps_get_aux1();
 
-#define PAULA_SET_IRQ(x) ps_write_16(0xdff09c, 0x8000 | (1 << x))
-
 #endif /* _PS_PROTOCOL_H */

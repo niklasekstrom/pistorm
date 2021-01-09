@@ -17,6 +17,7 @@
 #include "gayle.h"
 #include "m68k.h"
 #include "ps_autoconfig.h"
+#include "ps_customchips.h"
 #include "ps_fastmem.h"
 #include "ps_kickstart.h"
 #include "ps_mappings.h"
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]) {
   init_mappings();
   init_autoconfig();
   init_fastmem();
+  init_customchips();
 
   ps_setup_protocol();
   ps_reset_state_machine();
@@ -74,22 +76,8 @@ int main(int argc, char *argv[]) {
 #endif
 
   while (1) {
-    m68k_execute(300);
-
-    if (!ps_get_aux1()) {
-      unsigned int status = ps_read_status_reg();
-      m68k_set_irq((status & 0xe000) >> 13);
-    } else if (check_gayle_irq()) {
-      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
-      m68k_set_irq(2);
-#if A314_ENABLED
-    } else if (a314_check_int2()) {
-      PAULA_SET_IRQ(3);  // IRQ 3 = INT2
-      m68k_set_irq(2);
-#endif
-    } else {
-      m68k_set_irq(0);
-    }
+    ps_update_irq();
+    m68k_execute(10000);
   }
 
   return 0;

@@ -118,7 +118,7 @@ static void setup_gpclk() {
     ;
   usleep(100);
 
-  SET_GPIO_ALT(4, 0); // gpclk0
+  SET_GPIO_ALT(4, 0);  // gpclk0
 }
 
 void ps_setup_protocol() {

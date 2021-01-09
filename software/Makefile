@@ -1,6 +1,6 @@
 EXENAME          = pistorm
 
-MAINFILES        = pistorm.c ps_protocol.c ps_mappings.c ps_autoconfig.c ps_fastmem.c ps_kickstart.c gayle.c ide/ide.c
+MAINFILES        = pistorm.c ps_protocol.c ps_mappings.c ps_autoconfig.c ps_customchips.c ps_fastmem.c ps_kickstart.c gayle.c ide/ide.c
 MUSASHIFILES     = m68kcpu.c softfloat/softfloat.c 
 MUSASHIGENCFILES = m68kops.c
 MUSASHIGENHFILES = m68kops.h
