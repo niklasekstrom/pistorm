@@ -188,6 +188,11 @@
 #define M68K_EMULATE_PMMU   OPT_ON
 
 
+/* If ON, store the D/A registers before start of new instruction.
+ * This is used to retry the instruction in case of a bus error.
+ */
+#define M68K_DA_SAVE                OPT_OFF
+
 /* ----------------------------- COMPATIBILITY ---------------------------- */
 
 /* The following options set optimizations that violate the current ANSI
