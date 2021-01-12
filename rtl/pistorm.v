@@ -8,8 +8,8 @@ module pistorm(
     input   [1:0]   PI_SA,      // GPIO[3..2]
     input           PI_CLK,     // GPIO4
     input           PI_UNUSED,  // GPIO5
-    input           PI_SOE,     // GPIO6
-    input           PI_SWE,     // GPIO7
+    input           PI_RD,      // GPIO6
+    input           PI_WR,      // GPIO7
     inout   [15:0]  PI_SD,      // GPIO[23..8]
 
     output reg      LTCH_A_0,
@@ -76,21 +76,21 @@ module pistorm(
     M68K_BG_n <= 1'b1;
   end
 
-  reg [1:0] soe_sync;
-  reg [1:0] swe_sync;
+  reg [1:0] rd_sync;
+  reg [1:0] wr_sync;
 
   always @(posedge c200m) begin
-    soe_sync <= {soe_sync[0], PI_SOE};
-    swe_sync <= {swe_sync[0], PI_SWE};
+    rd_sync <= {rd_sync[0], PI_RD};
+    wr_sync <= {wr_sync[0], PI_WR};
   end
 
-  wire soe_rising = !soe_sync[1] && soe_sync[0];
-  wire swe_rising = !swe_sync[1] && swe_sync[0];
+  wire rd_rising = !rd_sync[1] && rd_sync[0];
+  wire wr_rising = !wr_sync[1] && wr_sync[0];
 
   wire c200m = PI_CLK;
 
   reg [15:0] data_out;
-  assign PI_SD = PI_SA == REG_STATUS && PI_SOE ? data_out : 16'bz;
+  assign PI_SD = PI_SA == REG_STATUS && PI_RD ? data_out : 16'bz;
 
   reg [15:0] status;
   wire reset_n = status[1];
@@ -105,16 +105,16 @@ module pistorm(
   reg op_res = 1'b0;
 
   always @(*) begin
-    LTCH_D_WR_U <= PI_SA == REG_DATA && PI_SWE;
-    LTCH_D_WR_L <= PI_SA == REG_DATA && PI_SWE;
+    LTCH_D_WR_U <= PI_SA == REG_DATA && PI_WR;
+    LTCH_D_WR_L <= PI_SA == REG_DATA && PI_WR;
 
-    LTCH_A_0 <= PI_SA == REG_ADDR_LO && PI_SWE;
-    LTCH_A_8 <= PI_SA == REG_ADDR_LO && PI_SWE;
+    LTCH_A_0 <= PI_SA == REG_ADDR_LO && PI_WR;
+    LTCH_A_8 <= PI_SA == REG_ADDR_LO && PI_WR;
 
-    LTCH_A_16 <= PI_SA == REG_ADDR_HI && PI_SWE;
-    LTCH_A_24 <= PI_SA == REG_ADDR_HI && PI_SWE;
+    LTCH_A_16 <= PI_SA == REG_ADDR_HI && PI_WR;
+    LTCH_A_24 <= PI_SA == REG_ADDR_HI && PI_WR;
 
-    LTCH_D_RD_OE_n <= !(PI_SA == REG_DATA && PI_SOE);
+    LTCH_D_RD_OE_n <= !(PI_SA == REG_DATA && PI_RD);
   end
 
   reg a0;
@@ -125,7 +125,7 @@ module pistorm(
     if (op_res)
       PI_TXN_IN_PROGRESS <= 1'b0;
 
-    if (swe_rising) begin
+    if (wr_rising) begin
       case (PI_SA)
         REG_ADDR_LO: begin
           a0 <= PI_SD[0];
@@ -143,7 +143,7 @@ module pistorm(
       endcase
     end
 
-    if (soe_rising && PI_SA == REG_STATUS) begin
+    if (rd_rising && PI_SA == REG_STATUS) begin
       data_out <= {~ipl_n, status[12:0]};
     end
   end
