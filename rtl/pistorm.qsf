@@ -53,9 +53,9 @@ set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR "-1"
 set_global_assignment -name POWER_EXT_SUPPLY_VOLTAGE_TO_REGULATOR 3.3V
 
 set_location_assignment PIN_12 -to PI_CLK
-set_location_assignment PIN_34 -to PI_SA[0]
+set_location_assignment PIN_34 -to PI_SA[2]
 set_location_assignment PIN_28 -to PI_SA[1]
-set_location_assignment PIN_27 -to PI_SA[2]
+set_location_assignment PIN_27 -to PI_SA[0]
 set_location_assignment PIN_2 -to PI_SD[0]
 set_location_assignment PIN_3 -to PI_SD[1]
 set_location_assignment PIN_4 -to PI_SD[2]

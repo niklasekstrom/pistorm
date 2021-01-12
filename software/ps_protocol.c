@@ -11,9 +11,9 @@
 #define PIN_TXN_IN_PROGRESS 0
 #define PIN_IPL_ZERO 1
 
-#define PIN_SA2 2
+#define PIN_SA0 2
 #define PIN_SA1 3
-#define PIN_SA0 5
+#define PIN_SA2 5
 
 #define PIN_SOE 6
 #define PIN_SWE 7
@@ -123,12 +123,12 @@ void ps_setup_protocol() {
   INP_GPIO(PIN_TXN_IN_PROGRESS);
   INP_GPIO(PIN_IPL_ZERO);
 
-  INP_GPIO(PIN_SA2);
-  OUT_GPIO(PIN_SA2);
-  INP_GPIO(PIN_SA1);
-  OUT_GPIO(PIN_SA1);
   INP_GPIO(PIN_SA0);
   OUT_GPIO(PIN_SA0);
+  INP_GPIO(PIN_SA1);
+  OUT_GPIO(PIN_SA1);
+  INP_GPIO(PIN_SA2);
+  OUT_GPIO(PIN_SA2);
 
   INP_GPIO(PIN_SOE);
   OUT_GPIO(PIN_SOE);
