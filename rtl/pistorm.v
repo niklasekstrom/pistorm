@@ -3,13 +3,14 @@
  * Copyright 2020 Niklas Ekström - rewrite in Verilog
  */
 module pistorm(
-    input           PI_CLK,   // GPIO4
-    input   [2:0]   PI_SA,    // GPIO[5,3,2]
-    inout   [15:0]  PI_SD,    // GPIO[23..8]
-    input           PI_SOE,   // GPIO6
-    input           PI_SWE,   // GPIO7
-    output reg      PI_TXN_IN_PROGRESS,  // GPIO0
-    output reg      PI_IPL_ZERO,  // GPIO1
+    output reg      PI_TXN_IN_PROGRESS, // GPIO0
+    output reg      PI_IPL_ZERO,        // GPIO1
+    input   [1:0]   PI_SA,      // GPIO[3..2]
+    input           PI_CLK,     // GPIO4
+    input           PI_UNUSED,  // GPIO5
+    input           PI_SOE,     // GPIO6
+    input           PI_SWE,     // GPIO7
+    inout   [15:0]  PI_SD,      // GPIO[23..8]
 
     output reg      LTCH_A_0,
     output reg      LTCH_A_8,
@@ -48,10 +49,10 @@ module pistorm(
     input           M68K_BGACK_n
   );
 
-  localparam REG_DATA = 3'd0;
-  localparam REG_ADDR_LO = 3'd1;
-  localparam REG_ADDR_HI = 3'd2;
-  localparam REG_STATUS = 3'd3;
+  localparam REG_DATA = 2'd0;
+  localparam REG_ADDR_LO = 2'd1;
+  localparam REG_ADDR_HI = 2'd2;
+  localparam REG_STATUS = 2'd3;
 
   initial begin
     PI_TXN_IN_PROGRESS <= 1'b0;
