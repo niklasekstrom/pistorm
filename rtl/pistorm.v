@@ -5,12 +5,12 @@
 module pistorm(
     output reg      PI_TXN_IN_PROGRESS, // GPIO0
     output reg      PI_IPL_ZERO,        // GPIO1
-    input   [1:0]   PI_SA,      // GPIO[3..2]
+    input   [1:0]   PI_A,       // GPIO[3..2]
     input           PI_CLK,     // GPIO4
     input           PI_UNUSED,  // GPIO5
     input           PI_RD,      // GPIO6
     input           PI_WR,      // GPIO7
-    inout   [15:0]  PI_SD,      // GPIO[23..8]
+    inout   [15:0]  PI_D,       // GPIO[23..8]
 
     output reg      LTCH_A_0,
     output reg      LTCH_A_8,
@@ -90,7 +90,7 @@ module pistorm(
   wire c200m = PI_CLK;
 
   reg [15:0] data_out;
-  assign PI_SD = PI_SA == REG_STATUS && PI_RD ? data_out : 16'bz;
+  assign PI_D = PI_A == REG_STATUS && PI_RD ? data_out : 16'bz;
 
   reg [15:0] status;
   wire reset_n = status[1];
@@ -105,16 +105,16 @@ module pistorm(
   reg op_res = 1'b0;
 
   always @(*) begin
-    LTCH_D_WR_U <= PI_SA == REG_DATA && PI_WR;
-    LTCH_D_WR_L <= PI_SA == REG_DATA && PI_WR;
+    LTCH_D_WR_U <= PI_A == REG_DATA && PI_WR;
+    LTCH_D_WR_L <= PI_A == REG_DATA && PI_WR;
 
-    LTCH_A_0 <= PI_SA == REG_ADDR_LO && PI_WR;
-    LTCH_A_8 <= PI_SA == REG_ADDR_LO && PI_WR;
+    LTCH_A_0 <= PI_A == REG_ADDR_LO && PI_WR;
+    LTCH_A_8 <= PI_A == REG_ADDR_LO && PI_WR;
 
-    LTCH_A_16 <= PI_SA == REG_ADDR_HI && PI_WR;
-    LTCH_A_24 <= PI_SA == REG_ADDR_HI && PI_WR;
+    LTCH_A_16 <= PI_A == REG_ADDR_HI && PI_WR;
+    LTCH_A_24 <= PI_A == REG_ADDR_HI && PI_WR;
 
-    LTCH_D_RD_OE_n <= !(PI_SA == REG_DATA && PI_RD);
+    LTCH_D_RD_OE_n <= !(PI_A == REG_DATA && PI_RD);
   end
 
   reg a0;
@@ -126,24 +126,24 @@ module pistorm(
       PI_TXN_IN_PROGRESS <= 1'b0;
 
     if (wr_rising) begin
-      case (PI_SA)
+      case (PI_A)
         REG_ADDR_LO: begin
-          a0 <= PI_SD[0];
+          a0 <= PI_D[0];
           PI_TXN_IN_PROGRESS <= 1'b1;
         end
         REG_ADDR_HI: begin
           op_req <= 1'b1;
-          op_rw <= PI_SD[9];
-          op_uds_n <= PI_SD[8] ? a0 : 1'b0;
-          op_lds_n <= PI_SD[8] ? !a0 : 1'b0;
+          op_rw <= PI_D[9];
+          op_uds_n <= PI_D[8] ? a0 : 1'b0;
+          op_lds_n <= PI_D[8] ? !a0 : 1'b0;
         end
         REG_STATUS: begin
-          status <= PI_SD;
+          status <= PI_D;
         end
       endcase
     end
 
-    if (rd_rising && PI_SA == REG_STATUS) begin
+    if (rd_rising && PI_A == REG_STATUS) begin
       data_out <= {~ipl_n, status[12:0]};
     end
   end
