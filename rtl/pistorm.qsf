@@ -74,8 +74,8 @@ set_location_assignment PIN_19 -to PI_SD[14]
 set_location_assignment PIN_18 -to PI_SD[15]
 set_location_assignment PIN_30 -to PI_AUX0
 set_location_assignment PIN_33 -to PI_AUX1
-set_location_assignment PIN_35 -to PI_SOE_n
-set_location_assignment PIN_29 -to PI_SWE_n
+set_location_assignment PIN_35 -to PI_SOE
+set_location_assignment PIN_29 -to PI_SWE
 
 set_location_assignment PIN_44 -to LTCH_A_0
 set_location_assignment PIN_42 -to LTCH_A_8

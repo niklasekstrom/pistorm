@@ -6,8 +6,8 @@ module pistorm(
     input           PI_CLK,   // GPIO4
     input   [2:0]   PI_SA,    // GPIO[5,3,2]
     inout   [15:0]  PI_SD,    // GPIO[23..8]
-    input           PI_SOE_n, // GPIO6
-    input           PI_SWE_n, // GPIO7
+    input           PI_SOE,   // GPIO6
+    input           PI_SWE,   // GPIO7
     output reg      PI_AUX0,  // GPIO0
     output reg      PI_AUX1,  // GPIO1
 
@@ -77,16 +77,16 @@ module pistorm(
     M68K_BG_n <= 1'b1;
   end
 
-  reg [1:0] soe_n_sync;
-  reg [1:0] swe_n_sync;
+  reg [1:0] soe_sync;
+  reg [1:0] swe_sync;
 
   always @(posedge c200m) begin
-    soe_n_sync <= {soe_n_sync[0], PI_SOE_n};
-    swe_n_sync <= {swe_n_sync[0], PI_SWE_n};
+    soe_sync <= {soe_sync[0], PI_SOE};
+    swe_sync <= {swe_sync[0], PI_SWE};
   end
 
-  wire soe_n_falling = soe_n_sync[1] && !soe_n_sync[0];
-  wire swe_n_falling = swe_n_sync[1] && !swe_n_sync[0];
+  wire soe_rising = !soe_sync[1] && soe_sync[0];
+  wire swe_rising = !swe_sync[1] && swe_sync[0];
 
   wire c200m = PI_CLK;
 
@@ -113,7 +113,7 @@ module pistorm(
 
     op_req <= 1'b0;
 
-    if (swe_n_falling) begin
+    if (swe_rising) begin
       if (PI_SA[2]) begin
         if (PI_SA == 3'd4) begin
           status <= PI_SD;
@@ -157,11 +157,11 @@ module pistorm(
       end
     end
 
-    if (soe_n_sync[0]) begin
+    if (!soe_sync[0]) begin
       data_out_oe <= 1'b0;
       LTCH_D_RD_OE_n <= 1'b1;
     end
-    else if (soe_n_falling) begin
+    else if (soe_rising) begin
       if (PI_SA[2]) begin
         if (PI_SA == 3'd4) begin
           data_out <= {~ipl_n, status[12:0]};
@@ -377,7 +377,7 @@ module pistorm(
         end
       end
       2'd3: begin
-        if (soe_n_sync[0] && swe_n_sync[0]) begin
+        if (!soe_sync[0] && !swe_sync[0]) begin
           aux0_state <= 2'd0;
         end
       end
