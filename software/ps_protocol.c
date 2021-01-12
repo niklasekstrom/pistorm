@@ -8,8 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define PIN_AUX0 0
-#define PIN_AUX1 1
+#define PIN_TXN_IN_PROGRESS 0
+#define PIN_IPL_ZERO 1
 
 #define PIN_SA2 2
 #define PIN_SA1 3
@@ -125,8 +125,8 @@ void ps_setup_protocol() {
   setup_io();
   setup_gpclk();
 
-  INP_GPIO(PIN_AUX0);
-  INP_GPIO(PIN_AUX1);
+  INP_GPIO(PIN_TXN_IN_PROGRESS);
+  INP_GPIO(PIN_IPL_ZERO);
 
   INP_GPIO(PIN_SA2);
   OUT_GPIO(PIN_SA2);
@@ -195,7 +195,7 @@ void ps_write_16(unsigned int address, unsigned int data) {
   *(gpio + 1) = gpfsel1;
   *(gpio + 2) = gpfsel2;
 
-  while (*(gpio + 13) & (1 << PIN_AUX0))
+  while (*(gpio + 13) & (1 << PIN_TXN_IN_PROGRESS))
     ;
 }
 
@@ -231,7 +231,7 @@ void ps_write_8(unsigned int address, unsigned int data) {
   *(gpio + 1) = gpfsel1;
   *(gpio + 2) = gpfsel2;
 
-  while (*(gpio + 13) & (1 << PIN_AUX0))
+  while (*(gpio + 13) & (1 << PIN_TXN_IN_PROGRESS))
     ;
 }
 
@@ -263,10 +263,8 @@ unsigned int ps_read_16(unsigned int address) {
 
   *(gpio + 7) = 1 << PIN_SOE;
 
-  while (!(*(gpio + 13) & (1 << PIN_AUX0)))
+  while (*(gpio + 13) & (1 << PIN_TXN_IN_PROGRESS))
     ;
-
-  *(gpio + 7) = 1 << PIN_SOE;
 
   int val = *(gpio + 13);
 
@@ -298,10 +296,8 @@ unsigned int ps_read_8(unsigned int address) {
 
   *(gpio + 7) = 1 << PIN_SOE;
 
-  while (!(*(gpio + 13) & (1 << PIN_AUX0)))
+  while (*(gpio + 13) & (1 << PIN_TXN_IN_PROGRESS))
     ;
-
-  *(gpio + 7) = 1 << PIN_SOE;
 
   int val = *(gpio + 13);
 
@@ -370,5 +366,5 @@ void ps_pulse_reset() {
 
 int ps_get_aux1() {
   unsigned int val = *(gpio + 13);
-  return val & (1 << PIN_AUX1);
+  return val & (1 << PIN_IPL_ZERO);
 }

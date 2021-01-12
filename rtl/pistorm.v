@@ -8,8 +8,8 @@ module pistorm(
     inout   [15:0]  PI_SD,    // GPIO[23..8]
     input           PI_SOE,   // GPIO6
     input           PI_SWE,   // GPIO7
-    output reg      PI_AUX0,  // GPIO0
-    output reg      PI_AUX1,  // GPIO1
+    output reg      PI_TXN_IN_PROGRESS,  // GPIO0
+    output reg      PI_IPL_ZERO,  // GPIO1
 
     output reg      LTCH_A_0,
     output reg      LTCH_A_8,
@@ -49,8 +49,8 @@ module pistorm(
   );
 
   initial begin
-    PI_AUX0 <= 1'b0;
-    PI_AUX1 <= 1'b0;
+    PI_TXN_IN_PROGRESS <= 1'b0;
+    PI_IPL_ZERO <= 1'b0;
 
     LTCH_A_0 <= 1'b0;
     LTCH_A_8 <= 1'b0;
@@ -113,6 +113,9 @@ module pistorm(
 
     op_req <= 1'b0;
 
+    if (op_res)
+      PI_TXN_IN_PROGRESS <= 1'b0;
+
     if (swe_rising) begin
       if (PI_SA[2]) begin
         if (PI_SA == 3'd4) begin
@@ -128,6 +131,8 @@ module pistorm(
 
           LTCH_A_16 <= 1'b0;
           LTCH_A_24 <= 1'b0;
+
+          PI_TXN_IN_PROGRESS <= 1'b1;
 
           pi_state <= 2'd1;
         end
@@ -226,7 +231,7 @@ module pistorm(
     end
     if (ipl_n_1 == ipl_n_2)
       ipl_n <= ipl_n_1;
-    PI_AUX1 <= ipl_n == 3'b111;
+    PI_IPL_ZERO <= ipl_n == 3'b111;
   end
 
   reg delayed_op_req;
@@ -342,43 +347,6 @@ module pistorm(
           M68K_RW <= 1'b1;
 
           state <= state + 3'd1;
-        end
-      end
-    endcase
-  end
-
-  reg [1:0] aux0_state = 2'd0;
-
-  always @(posedge c200m) begin
-    case (aux0_state)
-      2'd0: begin
-        PI_AUX0 <= 1'b0;
-
-        if (op_req) begin
-          if (op_rw) begin
-            aux0_state <= 2'd1;
-          end
-          else begin
-            PI_AUX0 <= 1'b1;
-            aux0_state <= 2'd2;
-          end
-        end
-      end
-      2'd1: begin
-        if (op_res) begin
-          PI_AUX0 <= 1'b1;
-          aux0_state <= 2'd3;
-        end
-      end
-      2'd2: begin
-        if (op_res) begin
-          PI_AUX0 <= 1'b0;
-          aux0_state <= 2'd3;
-        end
-      end
-      2'd3: begin
-        if (!soe_sync[0] && !swe_sync[0]) begin
-          aux0_state <= 2'd0;
         end
       end
     endcase
