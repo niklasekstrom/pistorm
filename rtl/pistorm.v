@@ -48,21 +48,19 @@ module pistorm(
     input           M68K_BGACK_n
   );
 
+  localparam REG_DATA = 3'd0;
+  localparam REG_ADDR_LO = 3'd1;
+  localparam REG_ADDR_HI = 3'd2;
+  localparam REG_STATUS = 3'd3;
+
   initial begin
     PI_TXN_IN_PROGRESS <= 1'b0;
     PI_IPL_ZERO <= 1'b0;
 
-    LTCH_A_0 <= 1'b0;
-    LTCH_A_8 <= 1'b0;
-    LTCH_A_16 <= 1'b0;
-    LTCH_A_24 <= 1'b0;
     LTCH_A_OE_n <= 1'b1;
+    LTCH_D_WR_OE_n <= 1'b1;
     LTCH_D_RD_U <= 1'b0;
     LTCH_D_RD_L <= 1'b0;
-    LTCH_D_RD_OE_n <= 1'b1;
-    LTCH_D_WR_U <= 1'b0;
-    LTCH_D_WR_L <= 1'b0;
-    LTCH_D_WR_OE_n <= 1'b1;
 
     M68K_FC <= 3'd0;
 
@@ -91,8 +89,7 @@ module pistorm(
   wire c200m = PI_CLK;
 
   reg [15:0] data_out;
-  reg data_out_oe = 1'b0;
-  assign PI_SD = data_out_oe ? data_out : 16'bz;
+  assign PI_SD = PI_SA == REG_STATUS && PI_SOE ? data_out : 16'bz;
 
   reg [15:0] status;
   wire reset_n = status[1];
@@ -106,86 +103,47 @@ module pistorm(
   reg op_lds_n = 1'b1;
   reg op_res = 1'b0;
 
-  reg [1:0] pi_state = 2'd0;
+  always @(*) begin
+    LTCH_D_WR_U <= PI_SA == REG_DATA && PI_SWE;
+    LTCH_D_WR_L <= PI_SA == REG_DATA && PI_SWE;
+
+    LTCH_A_0 <= PI_SA == REG_ADDR_LO && PI_SWE;
+    LTCH_A_8 <= PI_SA == REG_ADDR_LO && PI_SWE;
+
+    LTCH_A_16 <= PI_SA == REG_ADDR_HI && PI_SWE;
+    LTCH_A_24 <= PI_SA == REG_ADDR_HI && PI_SWE;
+
+    LTCH_D_RD_OE_n <= !(PI_SA == REG_DATA && PI_SOE);
+  end
+
   reg a0;
 
   always @(posedge c200m) begin
-
     op_req <= 1'b0;
 
     if (op_res)
       PI_TXN_IN_PROGRESS <= 1'b0;
 
     if (swe_rising) begin
-      if (PI_SA[2]) begin
-        if (PI_SA == 3'd4) begin
+      case (PI_SA)
+        REG_ADDR_LO: begin
+          a0 <= PI_SD[0];
+          PI_TXN_IN_PROGRESS <= 1'b1;
+        end
+        REG_ADDR_HI: begin
+          op_req <= 1'b1;
+          op_rw <= PI_SD[9];
+          op_uds_n <= PI_SD[8] ? a0 : 1'b0;
+          op_lds_n <= PI_SD[8] ? !a0 : 1'b0;
+        end
+        REG_STATUS: begin
           status <= PI_SD;
         end
-      end
-      else begin // 68k access
-        if (pi_state == 2'd0) begin
-          a0 <= PI_SD[0];
-
-          LTCH_A_0 <= 1'b1;
-          LTCH_A_8 <= 1'b1;
-
-          LTCH_A_16 <= 1'b0;
-          LTCH_A_24 <= 1'b0;
-
-          PI_TXN_IN_PROGRESS <= 1'b1;
-
-          pi_state <= 2'd1;
-        end
-        else if (pi_state == 2'd1) begin
-          LTCH_A_16 <= 1'b1;
-          LTCH_A_24 <= 1'b1;
-
-          LTCH_D_WR_U <= 1'b0;
-          LTCH_D_WR_L <= 1'b0;
-
-          pi_state <= 2'd2;
-        end
-        else if (pi_state == 2'd2) begin
-          LTCH_D_WR_U <= 1'b1;
-          LTCH_D_WR_L <= 1'b1;
-
-          op_req <= 1'b1;
-          op_rw <= 1'b0;
-          op_uds_n <= PI_SA[1] ? a0 : 1'b0;
-          op_lds_n <= PI_SA[1] ? !a0 : 1'b0;
-
-          LTCH_A_0 <= 1'b0;
-          LTCH_A_8 <= 1'b0;
-
-          pi_state <= 2'd0;
-        end
-      end
+      endcase
     end
 
-    if (!soe_sync[0]) begin
-      data_out_oe <= 1'b0;
-      LTCH_D_RD_OE_n <= 1'b1;
-    end
-    else if (soe_rising) begin
-      if (PI_SA[2]) begin
-        if (PI_SA == 3'd4) begin
-          data_out <= {~ipl_n, status[12:0]};
-          data_out_oe <= 1'b1;
-        end
-      end
-      else begin // 68k access
-        op_req <= 1'b1;
-        op_rw <= 1'b1;
-        op_uds_n <= PI_SA[1] ? a0 : 1'b0;
-        op_lds_n <= PI_SA[1] ? !a0 : 1'b0;
-
-        LTCH_D_RD_OE_n <= 1'b0;
-
-        LTCH_A_0 <= 1'b0;
-        LTCH_A_8 <= 1'b0;
-
-        pi_state <= 2'd0;
-      end
+    if (soe_rising && PI_SA == REG_STATUS) begin
+      data_out <= {~ipl_n, status[12:0]};
     end
   end
 
