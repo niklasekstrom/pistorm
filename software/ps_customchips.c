@@ -55,7 +55,7 @@ static void write_intena(unsigned int value) {
 void ps_update_irq() {
   unsigned int ipl = 0;
 
-  if (!ps_get_aux1()) {
+  if (!ps_get_ipl_zero()) {
     unsigned int status = ps_read_status_reg();
     ipl = (status & 0xe000) >> 13;
   }
