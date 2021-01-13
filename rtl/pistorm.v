@@ -92,11 +92,17 @@ module pistorm(
   reg [15:0] data_out;
   assign PI_D = PI_A == REG_STATUS && PI_RD ? data_out : 16'bz;
 
-  reg [15:0] status;
-  wire reset_n = status[1];
+  always @(posedge c200m) begin
+    if (rd_rising && PI_A == REG_STATUS) begin
+      data_out <= {ipl, status[12:0]};
+    end
+  end
 
-  assign M68K_RESET_n = !reset_n ? 1'b0 : 1'bz;
-  assign M68K_HALT_n = !reset_n ? 1'b0 : 1'bz;
+  reg [15:0] status;
+  wire reset_out = !status[1];
+
+  assign M68K_RESET_n = reset_out ? 1'b0 : 1'bz;
+  assign M68K_HALT_n = reset_out ? 1'b0 : 1'bz;
 
   reg op_req = 1'b0;
   reg op_rw = 1'b1;
@@ -142,10 +148,6 @@ module pistorm(
         end
       endcase
     end
-
-    if (rd_rising && PI_A == REG_STATUS) begin
-      data_out <= {~ipl_n, status[12:0]};
-    end
   end
 
   reg [2:0] c7m_sync;
@@ -165,32 +167,36 @@ module pistorm(
 
   always @(posedge c200m) begin
     if (c7m_falling) begin
-      if (e_counter == 4'd9) begin
-        M68K_E <= 1'b0;
+      if (e_counter == 4'd9)
         e_counter <= 4'd0;
-      end
-      else if (e_counter == 4'd5) begin
-        M68K_E <= 1'b1;
+      else
         e_counter <= e_counter + 4'd1;
-      end
-      else begin
-        e_counter <= e_counter + 4'd1;
-      end
     end
   end
 
-  reg [2:0] ipl_n = 3'b111;
-  reg [2:0] ipl_n_1;
-  reg [2:0] ipl_n_2;
+  always @(posedge c200m) begin
+    if (c7m_falling) begin
+      if (e_counter == 4'd9)
+        M68K_E <= 1'b0;
+      else if (e_counter == 4'd5)
+        M68K_E <= 1'b1;
+    end
+  end
+
+  reg [2:0] ipl;
+  reg [2:0] ipl_1;
+  reg [2:0] ipl_2;
 
   always @(posedge c200m) begin
     if (c7m_falling) begin
-      ipl_n_1 <= M68K_IPL_n;
-      ipl_n_2 <= ipl_n_1;
+      ipl_1 <= ~M68K_IPL_n;
+      ipl_2 <= ipl_1;
     end
-    if (ipl_n_1 == ipl_n_2)
-      ipl_n <= ipl_n_1;
-    PI_IPL_ZERO <= ipl_n == 3'b111;
+
+    if (ipl_2 == ipl_1)
+      ipl <= ipl_2;
+
+    PI_IPL_ZERO <= ipl == 3'd0;
   end
 
   reg delayed_op_req;
