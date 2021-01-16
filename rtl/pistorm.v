@@ -49,6 +49,9 @@ module pistorm(
     input           M68K_BGACK_n
   );
 
+  wire c200m = PI_CLK;
+  wire c7m = M68K_CLK;
+
   localparam REG_DATA = 2'd0;
   localparam REG_ADDR_LO = 2'd1;
   localparam REG_ADDR_HI = 2'd2;
@@ -58,16 +61,8 @@ module pistorm(
     PI_TXN_IN_PROGRESS <= 1'b0;
     PI_IPL_ZERO <= 1'b0;
 
-    LTCH_A_OE_n <= 1'b1;
-    LTCH_D_WR_OE_n <= 1'b1;
-    LTCH_D_RD_U <= 1'b0;
-    LTCH_D_RD_L <= 1'b0;
-
     M68K_FC <= 3'd0;
 
-    M68K_AS_n <= 1'b1;
-    M68K_UDS_n <= 1'b1;
-    M68K_LDS_n <= 1'b1;
     M68K_RW <= 1'b1;
 
     M68K_E <= 1'b0;
@@ -87,14 +82,12 @@ module pistorm(
   wire rd_rising = !rd_sync[1] && rd_sync[0];
   wire wr_rising = !wr_sync[1] && wr_sync[0];
 
-  wire c200m = PI_CLK;
-
   reg [15:0] data_out;
   assign PI_D = PI_A == REG_STATUS && PI_RD ? data_out : 16'bz;
 
   always @(posedge c200m) begin
     if (rd_rising && PI_A == REG_STATUS) begin
-      data_out <= {ipl, status[12:0]};
+      data_out <= {ipl, 13'd0};
     end
   end
 
@@ -108,7 +101,6 @@ module pistorm(
   reg op_rw = 1'b1;
   reg op_uds_n = 1'b1;
   reg op_lds_n = 1'b1;
-  reg op_res = 1'b0;
 
   always @(*) begin
     LTCH_D_WR_U <= PI_A == REG_DATA && PI_WR;
@@ -123,12 +115,24 @@ module pistorm(
     LTCH_D_RD_OE_n <= !(PI_A == REG_DATA && PI_RD);
   end
 
+  reg [2:0] s1_sync;
+  reg [2:0] s7_sync;
+
+  always @(posedge c200m) begin
+    s1_sync <= {s1_sync[1:0], S1};
+    s7_sync <= {s7_sync[1:0], S7};
+  end
+
+  wire rising_s1 = !s1_sync[2] && s1_sync[1];
+  wire rising_s7 = !s7_sync[2] && s7_sync[1];
+
   reg a0;
 
   always @(posedge c200m) begin
-    op_req <= 1'b0;
+    if (rising_s1)
+      op_req <= 1'b0;
 
-    if (op_res)
+    if (rising_s7)
       PI_TXN_IN_PROGRESS <= 1'b0;
 
     if (wr_rising) begin
@@ -151,37 +155,13 @@ module pistorm(
   end
 
   reg [2:0] c7m_sync;
-  reg [2:0] dtack_n_sync;
-  reg [2:0] vpa_n_sync;
 
   always @(posedge c200m) begin
     c7m_sync <= {c7m_sync[1:0], M68K_CLK};
-    dtack_n_sync <= {dtack_n_sync[1:0], M68K_DTACK_n};
-    vpa_n_sync <= {vpa_n_sync[1:0], M68K_VPA_n};
   end
 
   wire c7m_rising = !c7m_sync[2] && c7m_sync[1];
   wire c7m_falling = c7m_sync[2] && !c7m_sync[1];
-
-  reg [3:0] e_counter = 4'd0;
-
-  always @(posedge c200m) begin
-    if (c7m_falling) begin
-      if (e_counter == 4'd9)
-        e_counter <= 4'd0;
-      else
-        e_counter <= e_counter + 4'd1;
-    end
-  end
-
-  always @(posedge c200m) begin
-    if (c7m_falling) begin
-      if (e_counter == 4'd9)
-        M68K_E <= 1'b0;
-      else if (e_counter == 4'd5)
-        M68K_E <= 1'b1;
-    end
-  end
 
   reg [2:0] ipl;
   reg [2:0] ipl_1;
@@ -199,121 +179,93 @@ module pistorm(
     PI_IPL_ZERO <= ipl == 3'd0;
   end
 
-  reg delayed_op_req;
+  reg [3:0] e_counter = 4'd0;
 
-  reg [2:0] state = 3'd0;
-  reg [2:0] latch_data_delay;
+  always @(negedge c7m) begin
+    if (e_counter == 4'd9)
+      e_counter <= 4'd0;
+    else
+      e_counter <= e_counter + 4'd1;
+  end
 
-  always @(posedge c200m) begin
-    op_res <= 1'b0;
+  always @(negedge c7m) begin
+    if (e_counter == 4'd9)
+      M68K_E <= 1'b0;
+    else if (e_counter == 4'd5)
+      M68K_E <= 1'b1;
+  end
 
-    if (op_req)
-      delayed_op_req <= 1'b1;
+  reg [1:0] state = 2'd0;
+  reg wait_req = 1'b1;
+  reg wait_dtack = 1'b0;
 
+  wire S0 = state == 2'd0 && c7m && !wait_req;
+  wire Sr = state == 2'd0 && wait_req;
+  wire S1 = state == 2'd1 && !c7m;
+  wire S2 = state == 2'd1 && c7m;
+  wire S3 = state == 2'd2 && !c7m && !wait_dtack;
+  wire S4 = state == 2'd2 && c7m && !wait_dtack;
+  wire Sw = state == 2'd2 && wait_dtack;
+  wire S5 = state == 2'd3 && !c7m;
+  wire S6 = state == 2'd3 && c7m;
+  wire S7 = state == 2'd0 && !c7m && !wait_req;
+
+  always @(*) begin
+    LTCH_A_OE_n <= !(S1 || S2 || S3 || S4 || Sw || S5 || S6 || S7);
+    LTCH_D_WR_OE_n <= !(!op_rw && (S3 || S4 || Sw || S5 || S6 || S7));
+
+    LTCH_D_RD_U <= S7;
+    LTCH_D_RD_L <= S7;
+
+    M68K_AS_n <= !(S2 || S3 || S4 || Sw || S5 || S6);
+    M68K_UDS_n <= (op_rw && (S2 || S3)) || (S4 || Sw || S5 || S6) ? op_uds_n : 1'b1;
+    M68K_LDS_n <= (op_rw && (S2 || S3)) || (S4 || Sw || S5 || S6) ? op_lds_n : 1'b1;
+  end
+
+  always @(negedge c7m) begin
     case (state)
-
-      3'd0: begin
-        if (c7m_falling) begin // S0 -> S1
-          if (delayed_op_req) begin
-            delayed_op_req <= 1'b0;
-            LTCH_A_OE_n <= 1'b0;
-            state <= state + 3'd1;
-          end
+      2'd0: begin // S0|Sr -> S1|Sr
+        if (op_req_sync) begin
+          wait_req <= 1'b0;
+          state <= state + 2'd1;
+        end
+        else begin
+          wait_req <= 1'b1;
         end
       end
 
-      3'd1: begin
-        if (c7m_rising) begin // S1 -> S2
-          M68K_AS_n <= 1'b0;
-
-          if (op_rw) begin
-            M68K_UDS_n <= op_uds_n;
-            M68K_LDS_n <= op_lds_n;
-          end
-          else begin
-            M68K_RW <= 1'b0;
-          end
-
-          state <= state + 3'd1;
-        end
+      2'd1: begin // S2 -> S3
+        state <= state + 2'd1;
       end
 
-      3'd2: begin
-        if (c7m_falling) begin // S2 -> S3
-          if (!op_rw) begin
-            LTCH_D_WR_OE_n <= 1'b0;
-          end
-
-          state <= state + 3'd1;
+      2'd2: begin // S4|Sw -> S5|Sw
+        if (!M68K_DTACK_n || (!M68K_VMA_n && e_counter == 4'd8)) begin
+          wait_dtack <= 1'b0;
+          state <= state + 2'd1;
         end
-      end
-
-      3'd3: begin
-        if (c7m_rising) begin // S3 -> S4
-          if (!op_rw) begin
-            M68K_UDS_n <= op_uds_n;
-            M68K_LDS_n <= op_lds_n;
-          end
-
-          state <= state + 3'd1;
-        end
-      end
-
-      3'd4: begin
-        if (c7m_falling) begin // S4|Sw -> S5|Sw
-          if (!dtack_n_sync[1]) begin
-            state <= state + 3'd1;
-          end
-          else if (!vpa_n_sync[1] && e_counter == 4'd2) begin
+        else begin
+          if (!M68K_VPA_n && e_counter == 4'd2) begin
             M68K_VMA_n <= 1'b0;
           end
-          else if (!M68K_VMA_n && e_counter == 4'd8) begin
-            state <= state + 3'd1;
-          end
+          wait_dtack <= 1'b1;
         end
       end
 
-      3'd5: begin
-        if (c7m_rising) begin // S5 -> S6
-          latch_data_delay <= 3'd7;
-          state <= state + 3'd1;
-        end
+      2'd3: begin // S6 -> S7
+        M68K_VMA_n <= 1'b1;
+        state <= state + 2'd1;
       end
+    endcase
+  end
 
-      3'd6: begin
-        if (latch_data_delay != 3'd0) begin
-          latch_data_delay <= latch_data_delay - 3'd1;
-        end
-        if (latch_data_delay == 3'd1) begin
-          LTCH_D_RD_U <= 1'b1;
-          LTCH_D_RD_L <= 1'b1;
-        end
-        else if (c7m_falling) begin // S6 -> S7
-          M68K_VMA_n <= 1'b1;
+  reg op_req_sync;
 
-          M68K_AS_n <= 1'b1;
-          M68K_UDS_n <= 1'b1;
-          M68K_LDS_n <= 1'b1;
+  always @(posedge c7m) begin
+    op_req_sync <= op_req;
 
-          state <= state + 3'd1;
-        end
-      end
-
-      3'd7: begin
-        if (c7m_rising) begin // S7 -> S0
-          op_res <= 1'b1;
-
-          LTCH_D_RD_U <= 1'b0;
-          LTCH_D_RD_L <= 1'b0;
-
-          LTCH_A_OE_n <= 1'b1;
-          LTCH_D_WR_OE_n <= 1'b1;
-
-          M68K_RW <= 1'b1;
-
-          state <= state + 3'd1;
-        end
-      end
+    case (state)
+      2'd0: M68K_RW <= 1'b1; // S7 -> S0
+      2'd1: M68K_RW <= op_rw; // S1 -> S2
     endcase
   end
 
