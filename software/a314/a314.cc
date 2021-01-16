@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "../ps_autoconfig.h"
+#include "../ps_irq.h"
 #include "../ps_mappings.h"
 #include "../ps_fastmem.h"
 #include "../psconf.h"
@@ -1226,6 +1227,10 @@ static void a314_write_memory_32(unsigned int address, unsigned int value) {
   // Not implemented.
 }
 
+static unsigned int check_int2() {
+  return ca.a_events & ca.a_enable;
+}
+
 static unsigned char ac_rom[] = {
     0xc, AC_MEM_SIZE_64KB,                  // 00/02, 64 kB
     0xa, 0x3,                               // 04/06, product id
@@ -1252,10 +1257,9 @@ static void ac_done_callback(int configured, unsigned int base) {
 
   unsigned int devno = ps_add_device(&device);
   ps_add_range(devno, base, A314_COM_AREA_SIZE);
-}
 
-int a314_check_int2() {
-  return ca.a_events & ca.a_enable;
+  struct ps_irq_device int2 = {check_int2};
+  ps_add_int2_device(&int2);
 }
 
 int a314_init() {

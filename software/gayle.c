@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "ide/ide.h"
+#include "ps_irq.h"
 #include "ps_mappings.h"
 
 #define CLOCKBASE 0xDC0000
@@ -275,11 +276,8 @@ static unsigned int gayle_read_32(unsigned int address) {
   }
 }
 
-unsigned int check_gayle_irq() {
-  if (gayle_int & (1 << 7))
-    return ide0->drive->intrq;
-
-  return 0;
+static unsigned int check_int2() {
+  return (gayle_int & 0x80) ? ide0->drive->intrq : 0;
 }
 
 int init_gayle(const char image_name[]) {
@@ -302,5 +300,9 @@ int init_gayle(const char image_name[]) {
   uint32_t devno = ps_add_device(&gayle_device);
   ps_add_range(devno, 0xda0000, 0x10000);
   ps_add_range(devno, 0xde0000, 0x10000);
+
+  struct ps_irq_device int2 = {check_int2};
+  ps_add_int2_device(&int2);
+
   return 0;
 }

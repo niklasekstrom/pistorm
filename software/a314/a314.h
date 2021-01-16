@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 int a314_init();
-int a314_check_int2();
 
 #ifdef __cplusplus
 }

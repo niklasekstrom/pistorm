@@ -19,6 +19,7 @@
 #include "ps_autoconfig.h"
 #include "ps_customchips.h"
 #include "ps_fastmem.h"
+#include "ps_irq.h"
 #include "ps_kickstart.h"
 #include "ps_mappings.h"
 #include "ps_protocol.h"
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   while (1) {
-    ps_update_irq();
+    ps_set_irq();
     m68k_execute(10000);
   }
 
