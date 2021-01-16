@@ -334,18 +334,12 @@ void ps_write_status_reg(unsigned int value) {
   *(gpio + 7) = 1 << PIN_SWE;
   *(gpio + 7) = 1 << PIN_SWE;
 
-  // Bus HIGH-Z
   *(gpio) = gpfsel0;
   *(gpio + 1) = gpfsel1;
   *(gpio + 2) = gpfsel2;
 }
 
 unsigned int ps_read_status_reg() {
-  // Bus HIGH-Z
-  *(gpio) = gpfsel0;
-  *(gpio + 1) = gpfsel1;
-  *(gpio + 2) = gpfsel2;
-
   *(gpio + 10) = (1 << PIN_SA2) | (1 << PIN_SA1) | (1 << PIN_SA0);
   *(gpio + 7) = (1 << PIN_SA2);
 
