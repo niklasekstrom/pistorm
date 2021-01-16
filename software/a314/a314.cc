@@ -1232,12 +1232,12 @@ static unsigned int check_int2() {
 }
 
 static unsigned char ac_rom[] = {
-    0xc, AC_MEM_SIZE_64KB,                  // 00/02, 64 kB
-    0xa, 0x3,                               // 04/06, product id
-    0x0, 0x0,                               // 08/0a, any space okay
-    0x0, 0x0,                               // 0c/0e, reserved
-    0x0, 0x7, 0xd, 0xb,                     // 10/12/14/16, mfg id
-    0xa, 0x3, 0x1, 0x4, 0x0, 0x0, 0x0, 0x0  // 18/.../26, serial
+    0xc0 | AC_MEM_SIZE_64KB,  // 00/02, 64 kB
+    0xa3,                     // 04/06, product id
+    0x00,                     // 08/0a, any space okay
+    0x00,                     // 0c/0e, reserved
+    0x07, 0xdb,               // 10/12/14/16, mfg id
+    0x00, 0x00, 0xa3, 0x14    // 18/.../26, serial
 };
 
 static void ac_done_callback(int configured, unsigned int base) {

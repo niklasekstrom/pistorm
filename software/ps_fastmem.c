@@ -41,12 +41,12 @@ static void fastmem_write_32(unsigned int address, unsigned int value) {
 #endif
 
 static unsigned char ac_rom[] = {
-    0xe, AC_MEM_SIZE_8MB,                   // 00/02, link into memory free list, 8 MB
-    0x6, 0x9,                               // 04/06, product id
-    0x8, 0x0,                               // 08/0a, preference to 8 MB space
-    0x0, 0x0,                               // 0c/0e, reserved
-    0x0, 0x7, 0xd, 0xb,                     // 10/12/14/16, mfg id
-    0x0, 0x0, 0x0, 0x0, 0x0, 0x4, 0x2, 0x0  // 18/.../26, serial
+    0xe0 | AC_MEM_SIZE_8MB,   // 00/02, link into memory free list, 8 MB
+    0x69,                     // 04/06, product id
+    0x80,                     // 08/0a, preference to 8 MB space
+    0x00,                     // 0c/0e, reserved
+    0x07, 0xdb,               // 10/12/14/16, mfg id
+    0x00, 0x00, 0x04, 0x20    // 18/.../26, serial
 };
 
 static void done_callback(int configured, unsigned int base) {

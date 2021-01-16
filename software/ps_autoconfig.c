@@ -27,12 +27,20 @@ static unsigned int ac_read_memory_8(unsigned int address) {
   struct autoconfig_pic *pic = &pics[current_pic];
   address -= AUTOCONFIG_BASE;
 
+  unsigned int nibble = address / 2;
+  unsigned int byte = nibble / 2;
+
   unsigned char val = 0;
-  if ((address & 1) == 0 && (address / 2) < pic->rom_size)
-    val = pic->rom[address / 2];
-  val <<= 4;
-  if (address != 0 && address != 2 && address != 40 && address != 42)
+
+  if ((address & 1) == 0 && byte < pic->rom_size)
+    val = pic->rom[byte];
+
+  if (nibble & 1)
+    val <<= 4;
+  val &= 0xf0;
+  if (address != 0x00 && address != 0x02 && address != 0x40 && address != 0x42)
     val ^= 0xf0;
+
   return (unsigned int)val;
 }
 
